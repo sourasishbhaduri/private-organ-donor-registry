@@ -1,0 +1,53 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+
+export ledger totalDonors: Counter;
+export ledger registeredCommitments: Map<Bytes<32>, Boolean>;
+export ledger bloodGroupCounts: Map<Uint<8>, Uint<32>>;
+
+witness secretDonorKey(): Bytes<32>;
+witness secretDonorAge(): Uint<8>;
+witness secretBloodType(): Uint<8>;
+witness secretOrganPledge(): Uint<8>;
+witness secretClearanceHash(): Bytes<32>;
+
+export circuit registerDonor(donorCommitment: Bytes<32>): Bytes<32> {
+  const age: Uint<8> = secretDonorAge();
+  const blood: Uint<8> = secretBloodType();
+  const pledge: Uint<8> = secretOrganPledge();
+  const clearance: Bytes<32> = secretClearanceHash();
+
+  assert(age >= 18, "Donor must be at least 18 years of age");
+  assert(blood >= 1 && blood <= 8, "Invalid blood group code (1..8)");
+  assert(pledge > 0, "Must pledge at least one organ");
+  const emptyHash: Bytes<32> = pad(32, "");
+  assert(clearance != emptyHash, "Medical clearance signature required");
+
+  const pubCommitment: Bytes<32> = disclose(donorCommitment);
+  assert(!registeredCommitments.member(pubCommitment), "Donor commitment already registered");
+
+  registeredCommitments.insert(pubCommitment, true);
+  totalDonors.increment(1);
+
+  const discBlood: Uint<8> = disclose(blood);
+  const currentCount: Uint<32> = bloodGroupCounts.lookup(discBlood);
+  bloodGroupCounts.insert(discBlood, (currentCount + 1) as Uint<32>);
+
+  return pubCommitment;
+}
+
+export circuit verifyEligibility(expectedCommitment: Bytes<32>): Boolean {
+  const age: Uint<8> = secretDonorAge();
+  const clearance: Bytes<32> = secretClearanceHash();
+
+  const isAdult: Boolean = (age >= 18);
+  const emptyHash: Bytes<32> = pad(32, "");
+  const hasClearance: Boolean = (clearance != emptyHash);
+  const isEligible: Boolean = (isAdult && hasClearance);
+
+  const pubCommitment: Bytes<32> = disclose(expectedCommitment);
+  const isRegistered: Boolean = registeredCommitments.member(pubCommitment);
+
+  return disclose(isEligible && isRegistered);
+}
