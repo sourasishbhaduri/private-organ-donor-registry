@@ -1,5 +1,5 @@
 /**
- * CLI for interacting with private-organ-donor-registry contract
+ * Interactive CLI for Private Organ Donor Registry on Midnight Network
  */
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
@@ -7,7 +7,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WebSocket } from 'ws';
-import { Buffer } from 'buffer';
+import { createHash } from 'node:crypto';
 
 // Midnight SDK imports
 import { findDeployedContract } from '@midnight-ntwrk/midnight-js-contracts';
@@ -23,48 +23,77 @@ import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-j
 // @ts-expect-error Required for wallet sync
 globalThis.WebSocket = WebSocket;
 
-// Must match the privateStateId used at deploy time so the CLI reconnects to
-// the same private state. The hello-world contract has no witnesses (empty state).
-const PRIVATE_STATE_ID = 'helloWorldPrivateState';
+const PRIVATE_STATE_ID = 'organDonorRegistryPrivateState';
+
+export interface OrganDonorPrivateState {
+  secretDonorKey: Uint8Array;
+  secretDonorAge: number;
+  secretBloodType: number;
+  secretOrganPledge: number;
+  secretClearanceHash: Uint8Array;
+}
+
+const witnesses = {
+  secretDonorKey: (context: any) => context.privateState.secretDonorKey,
+  secretDonorAge: (context: any) => context.privateState.secretDonorAge,
+  secretBloodType: (context: any) => context.privateState.secretBloodType,
+  secretOrganPledge: (context: any) => context.privateState.secretOrganPledge,
+  secretClearanceHash: (context: any) => context.privateState.secretClearanceHash,
+};
+
+const initialPrivateState: OrganDonorPrivateState = {
+  secretDonorKey: new Uint8Array(32),
+  secretDonorAge: 18,
+  secretBloodType: 1,
+  secretOrganPledge: 1,
+  secretClearanceHash: new Uint8Array(32).fill(1),
+};
 
 const { network, config: networkConfig } = resolveNetwork();
 const SEED = getOrCreateSeed(network);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const zkConfigPath = path.resolve(__dirname, '..', 'contracts', 'managed', 'hello-world');
-
-// Load compiled contract
+const zkConfigPath = path.resolve(__dirname, '..', 'contracts', 'managed', 'organ-donor-registry');
 const contractPath = path.join(zkConfigPath, 'contract', 'index.js');
 
-// Check if contract is compiled
 if (!fs.existsSync(contractPath)) {
-  console.error('\n❌ Contract not compiled! Run: npm run compile\n');
+  console.error('❌ Contract not compiled. Run `npm run compile` first.');
   process.exit(1);
 }
 
-const HelloWorld = await import(pathToFileURL(contractPath).href);
-
-const compiledContract = CompiledContract.make('hello-world', HelloWorld.Contract).pipe(
-  CompiledContract.withVacantWitnesses,
-  CompiledContract.withCompiledFileAssets(zkConfigPath),
+const OrganDonorModule = await import(pathToFileURL(contractPath).href);
+const compiledContract: any = (CompiledContract as any).make('organ-donor-registry', OrganDonorModule.Contract).pipe(
+  (CompiledContract as any).withWitnesses(witnesses),
+  (CompiledContract as any).withCompiledFileAssets(zkConfigPath),
 );
 
-// ─── Providers ─────────────────────────────────────────────────────────────────
+const BLOOD_NAMES: Record<number, string> = {
+  1: 'O- (Universal Donor)',
+  2: 'O+',
+  3: 'A-',
+  4: 'A+',
+  5: 'B-',
+  6: 'B+',
+  7: 'AB-',
+  8: 'AB+ (Universal Recipient)',
+};
+
+function computeCommitmentHash(secretId: string, age: number, bloodType: number, clearanceSeed: string): Uint8Array {
+  const hash = createHash('sha256');
+  hash.update(secretId);
+  hash.update(new Uint8Array([age]));
+  hash.update(new Uint8Array([bloodType]));
+  hash.update(clearanceSeed);
+  return new Uint8Array(hash.digest());
+}
 
 async function createProviders(walletCtx: WalletContext) {
-  // The SDK requires the private-state password to be at least 16 characters.
-  // The default below is a placeholder for local devnet only — set a strong
-  // password via PRIVATE_STATE_PASSWORD when you move to a non-local target.
   const privateStatePassword = process.env.PRIVATE_STATE_PASSWORD?.trim() || 'Local-Devnet-Development-Placeholder-1';
 
   const walletProvider = {
-    // In Midnight.js 4.1.x the WalletProvider interface returns the key objects
-    // (CoinPublicKey / EncPublicKey) directly — no longer hex strings.
     getCoinPublicKey: () => walletCtx.shieldedSecretKeys.coinPublicKey,
     getEncryptionPublicKey: () => walletCtx.shieldedSecretKeys.encryptionPublicKey,
     async balanceTx(tx: any, ttl?: Date) {
-      // balanceUnboundTransaction -> finalizeRecipe is the complete balancing
-      // path in wallet-sdk 1.x; the earlier explicit signRecipe step is gone.
       const recipe = await walletCtx.wallet.balanceUnboundTransaction(
         tx,
         { shieldedSecretKeys: walletCtx.shieldedSecretKeys, dustSecretKey: walletCtx.dustSecretKey },
@@ -80,7 +109,7 @@ async function createProviders(walletCtx: WalletContext) {
 
   return {
     privateStateProvider: levelPrivateStateProvider({
-      privateStateStoreName: 'hello-world-state',
+      privateStateStoreName: 'organ-donor-registry-state',
       accountId,
       privateStoragePasswordProvider: () => privateStatePassword,
     }),
@@ -92,142 +121,188 @@ async function createProviders(walletCtx: WalletContext) {
   };
 }
 
-// ─── Main CLI ──────────────────────────────────────────────────────────────────
-
 async function main() {
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
-  console.log('║                   private-organ-donor-registry CLI                           ║');
+  console.log('║        PRIVATE ORGAN DONOR REGISTRY (MIDNIGHT ZK dAPP)       ║');
   console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
   const rl = createInterface({ input: stdin, output: stdout });
-
-  // Check for deployment
   const deployment = getDeployment(network);
+
   if (!deployment) {
-    console.error(`No deploy on file for network ${network}. Run \`npm run setup -- --network ${network}\` first.`);
+    console.error(`No deployment found for network ${network}. Run \`npm run setup\` first.`);
     process.exit(1);
   }
-  console.log(`  Contract: ${deployment.address}`);
-  console.log(`  Network: ${network}\n`);
+
+  console.log(`  Contract Address: ${deployment.address}`);
+  console.log(`  Network Target:   ${network}\n`);
 
   try {
-    const seed = SEED;
-
     console.log('  Connecting to wallet...');
-    const walletCtx = await createWallet({ network, networkConfig, seed });
-    const restoredCount = Object.values(walletCtx.restored).filter(Boolean).length;
-    if (restoredCount > 0) {
-      console.log(`  Restored ${restoredCount}/3 child wallets from .midnight-wallet-state — sync will resume from saved point.`);
-    }
-
-    console.log('  Syncing with network...');
-    console.log('  ℹ  This may take several minutes depending on network size.');
-    console.log('     RPC disconnection messages during sync are normal and can be safely ignored.\n');
-    const syncStart = Date.now();
-    const syncInterval = setInterval(() => {
-      const elapsed = Math.round((Date.now() - syncStart) / 1000);
-      process.stdout.write(`\r  ⏳ Still syncing... (${elapsed}s elapsed)   `);
-    }, 5000);
+    const walletCtx = await createWallet({ network, networkConfig, seed: SEED });
     const state = await walletCtx.wallet.waitForSyncedState();
-    clearInterval(syncInterval);
-    process.stdout.write('\r  ✓ Synced with network.                                      \n');
+    console.log('  ✓ Synced with Midnight network.');
 
-    // Persist sync state so the next run doesn't have to redo this work.
-    await persistWalletState(network, walletCtx);
     const balance = state.unshielded.balances[unshieldedToken().raw] ?? 0n;
-    console.log(`  Balance: ${balance.toLocaleString()} tNight\n`);
+    console.log(`  Balance: ${balance.toLocaleString()} tNIGHT\n`);
 
-    // Surface a faucet hint when a public-network wallet has 0 tNIGHT.
-    // Reads (option 2) work without funds, but writes (option 1) need DUST
-    // generated from registered NIGHT — without this hint the next failure
-    // mode is a confusing "Insufficient Funds" deep inside the tx builder.
-    if (balance === 0n && network !== 'undeployed' && networkConfig.faucet) {
-      const address = walletCtx.unshieldedKeystore.getBech32Address();
-      console.log('  ⚠ Wallet has no tNight. Fund it from the faucet to send transactions:');
-      console.log(`     ${networkConfig.faucet}`);
-      console.log(`     Wallet address: ${address}\n`);
-    }
-
-    // Setup providers and connect to contract
-    console.log('  Connecting to contract...');
+    console.log('  Connecting to contract circuit handle...');
     const providers = await createProviders(walletCtx);
 
     const deployed: any = await findDeployedContract(providers, {
       compiledContract: compiledContract as any,
       contractAddress: deployment.address,
       privateStateId: PRIVATE_STATE_ID,
-      initialPrivateState: {},
+      initialPrivateState,
     });
 
-    console.log('  ✅ Connected!\n');
+    console.log('  ✅ Connected to Organ Donor Registry!\n');
 
-    // Interactive CLI loop
     let running = true;
     while (running) {
-      console.log('─── Menu ───────────────────────────────────────────────────────');
-      console.log('  1. Store a message');
-      console.log('  2. Read current message');
-      console.log('  3. Check wallet balance');
-      console.log('  4. Exit\n');
+      console.log('─── Main Menu ──────────────────────────────────────────────────');
+      console.log('  1. Register as Anonymous Organ Donor (ZK Proof)');
+      console.log('  2. Query Public Anonymous Ledger State (Tally & Supply)');
+      console.log('  3. Privately Verify Donor Eligibility');
+      console.log('  4. Check Wallet Balances');
+      console.log('  5. Exit\n');
 
-      const choice = await rl.question('  Your choice: ');
+      const choice = await rl.question('  Select option [1-5]: ');
 
       switch (choice.trim()) {
         case '1': {
-          const message = await rl.question('  Enter your message: ');
-          console.log('\n  Submitting transaction (this may take 30-60 seconds)...');
+          console.log('\n─── Anonymous Organ Donor Registration ────────────────────────');
+          const secretId = await rl.question('  Enter secret Donor ID / Passphrase: ');
+          const ageStr = await rl.question('  Enter Age (years, min 18): ');
+          const age = parseInt(ageStr.trim() || '25', 10);
+
+          if (age < 18) {
+            console.error('  ❌ Registration rejected: Donor must be at least 18 years of age.');
+            break;
+          }
+
+          console.log('\n  Blood Groups:');
+          Object.entries(BLOOD_NAMES).forEach(([k, v]) => console.log(`   ${k}. ${v}`));
+          const bloodStr = await rl.question('  Select Blood Group Code [1-8]: ');
+          const bloodType = parseInt(bloodStr.trim() || '1', 10);
+
+          console.log('\n  Organ Pledges Bitmask:');
+          console.log('   1: Kidney | 2: Liver | 4: Heart | 8: Lungs | 16: Pancreas | 32: Cornea');
+          const pledgeStr = await rl.question('  Enter Organ Pledge Mask (e.g., 7 for Kidney+Liver+Heart): ');
+          const organPledgeMask = parseInt(pledgeStr.trim() || '1', 10);
+
+          const clearanceSeed = await rl.question('  Enter Hospital Clearance Signature / Seed: ');
+
+          const secretKeyBytes = new Uint8Array(createHash('sha256').update(secretId).digest());
+          const clearanceBytes = new Uint8Array(createHash('sha256').update(clearanceSeed).digest());
+          const commitmentHash = computeCommitmentHash(secretId, age, bloodType, clearanceSeed);
+
+          console.log('\n  🔒 Private Witness Data (NOT exposed to blockchain):');
+          console.log(`     Secret Identity: [PROTECTED BY ZK PROOF]`);
+          console.log(`     Exact Age:       ${age} (Only proving >= 18)`);
+          console.log(`     Blood Code:      ${bloodType} (${BLOOD_NAMES[bloodType] || 'Unknown'})`);
+          console.log('\n  🌐 Public Ledger Disclosure:');
+          console.log(`     Public Commitment: 0x${Buffer.from(commitmentHash).toString('hex')}`);
+
+          console.log('\n  Generating ZK Proof & submitting transaction (30-60s)...');
           try {
-            const tx = await deployed.callTx.storeMessage(message);
-            console.log(`\n  ✅ Message stored: "${message}"`);
+            // Update private state witnesses before calling circuit
+            await providers.privateStateProvider.set(PRIVATE_STATE_ID, {
+              secretDonorKey: secretKeyBytes,
+              secretDonorAge: age,
+              secretBloodType: bloodType,
+              secretOrganPledge: organPledgeMask,
+              secretClearanceHash: clearanceBytes,
+            });
+
+            const tx = await deployed.callTx.registerDonor(commitmentHash);
+            console.log(`\n  ✅ Registration Successful!`);
             console.log(`  Transaction ID: ${tx.public.txId}`);
-            console.log(`  Block height: ${tx.public.blockHeight}\n`);
-          } catch (error) {
-            console.error('\n  ❌ Failed:', error instanceof Error ? error.message : error);
+            console.log(`  Block Height:   ${tx.public.blockHeight}`);
+            console.log(`  Disclosed Commitment: 0x${Buffer.from(tx.public.result || commitmentHash).toString('hex')}\n`);
+          } catch (err: any) {
+            console.error('\n  ❌ Registration Failed:', err?.message || err);
           }
           break;
         }
 
         case '2': {
-          console.log('\n  Reading message from blockchain...');
+          console.log('\n─── Public Anonymous Ledger Query ──────────────────────────────');
           try {
             const contractState = await providers.publicDataProvider.queryContractState(deployment.address);
             if (contractState) {
-              const ledgerState = HelloWorld.ledger(contractState.data);
-              const message = Buffer.from(ledgerState.message).toString();
-              console.log(`\n  📋 Current message: "${message}"\n`);
+              const ledger = OrganDonorModule.ledger(contractState.data);
+              console.log(`\n  📊 Total Registered Donors: ${ledger.totalDonors}`);
+              console.log('\n  🩸 Anonymous Blood Supply Distribution:');
+              for (let b = 1; b <= 8; b++) {
+                const count = ledger.bloodGroupCounts.has(b) ? ledger.bloodGroupCounts.get(b) : 0;
+                console.log(`     ${BLOOD_NAMES[b] || `Type ${b}`}: ${count}`);
+              }
+              console.log('\n');
             } else {
-              console.log('\n  📋 No message found (contract state empty)\n');
+              console.log('\n  📋 Contract ledger state empty or not indexed yet.\n');
             }
-          } catch (error) {
-            console.error('\n  ❌ Failed:', error instanceof Error ? error.message : error);
+          } catch (err: any) {
+            console.error('\n  ❌ Ledger query failed:', err?.message || err);
           }
           break;
         }
 
         case '3': {
-          console.log('\n  Checking balance...');
-          const currentState = await walletCtx.wallet.waitForSyncedState();
-          const currentBalance = currentState.unshielded.balances[unshieldedToken().raw] ?? 0n;
-          const dustBalance = currentState.dust.balance(new Date());
-          console.log(`\n  tNight: ${currentBalance.toLocaleString()}`);
-          console.log(`  DUST: ${dustBalance.toLocaleString()}\n`);
+          console.log('\n─── Private Eligibility Verification ───────────────────────────');
+          const secretId = await rl.question('  Enter secret Donor ID / Passphrase: ');
+          const ageStr = await rl.question('  Enter Age: ');
+          const age = parseInt(ageStr.trim() || '25', 10);
+          const bloodStr = await rl.question('  Enter Blood Group Code [1-8]: ');
+          const bloodType = parseInt(bloodStr.trim() || '1', 10);
+          const clearanceSeed = await rl.question('  Enter Hospital Clearance Signature / Seed: ');
+
+          const secretKeyBytes = new Uint8Array(createHash('sha256').update(secretId).digest());
+          const clearanceBytes = new Uint8Array(createHash('sha256').update(clearanceSeed).digest());
+          const commitmentHash = computeCommitmentHash(secretId, age, bloodType, clearanceSeed);
+
+          console.log('\n  Verifying ZK proof for commitment 0x' + Buffer.from(commitmentHash).toString('hex') + '...');
+          try {
+            await providers.privateStateProvider.set(PRIVATE_STATE_ID, {
+              secretDonorKey: secretKeyBytes,
+              secretDonorAge: age,
+              secretBloodType: bloodType,
+              secretOrganPledge: 1,
+              secretClearanceHash: clearanceBytes,
+            });
+
+            const tx = await deployed.callTx.verifyEligibility(commitmentHash);
+            console.log(`\n  ✅ Verification Result: ${tx.public.result ? 'ELIGIBLE & REGISTERED' : 'INELIGIBLE / UNREGISTERED'}\n`);
+          } catch (err: any) {
+            console.error('\n  ❌ Verification error:', err?.message || err);
+          }
           break;
         }
 
-        case '4':
+        case '4': {
+          console.log('\n─── Wallet Balances ────────────────────────────────────────────');
+          const currentState = await walletCtx.wallet.waitForSyncedState();
+          const currentBalance = currentState.unshielded.balances[unshieldedToken().raw] ?? 0n;
+          const dustBalance = currentState.dust.balance(new Date());
+          console.log(`  tNIGHT: ${currentBalance.toLocaleString()}`);
+          console.log(`  DUST:   ${dustBalance.toLocaleString()}\n`);
+          break;
+        }
+
+        case '5':
           running = false;
-          console.log('\n  👋 Goodbye!\n');
+          console.log('\n  👋 Exiting Private Organ Donor Registry CLI.\n');
           break;
 
         default:
-          console.log('\n  ❌ Invalid choice. Please enter 1-4.\n');
+          console.log('\n  ❌ Invalid choice. Please enter a number between 1 and 5.\n');
       }
     }
 
     await persistWalletState(network, walletCtx);
     await walletCtx.wallet.stop();
-  } catch (error) {
-    console.error('\n❌ Error:', error instanceof Error ? error.message : error);
+  } catch (err: any) {
+    console.error('\n❌ Fatal CLI Error:', err?.message || err);
   } finally {
     rl.close();
   }
