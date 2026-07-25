@@ -1,8 +1,5 @@
 /**
  * Deploy private-organ-donor-registry contract to a Midnight network (undeployed by default; use --network preview|preprod for public networks).
- *
- * Non-interactive: scaffold → npm run setup runs straight through.
- * No readline prompts, no .midnight-seed file.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -23,80 +20,57 @@ import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-j
 // @ts-expect-error Required for wallet sync
 globalThis.WebSocket = WebSocket;
 
-// Identifier under which this contract's private state is stored. The
-// hello-world contract has no witnesses, so its private state is empty ({}).
-const PRIVATE_STATE_ID = 'helloWorldPrivateState';
+const PRIVATE_STATE_ID = 'organDonorRegistryPrivateState';
 
-// ─── Network configuration ─────────────────────────────────────────────────────
-//
-// Resolved from --network flag, .midnight-state.json, or defaulting to
-// 'undeployed' (local devnet). Switch networks with: npm run network <name>
+export interface OrganDonorPrivateState {
+  secretDonorKey: Uint8Array;
+  secretDonorAge: number;
+  secretBloodType: number;
+  secretOrganPledge: number;
+  secretClearanceHash: Uint8Array;
+}
+
+const witnesses = {
+  secretDonorKey: (context: any) => context.privateState.secretDonorKey,
+  secretDonorAge: (context: any) => context.privateState.secretDonorAge,
+  secretBloodType: (context: any) => context.privateState.secretBloodType,
+  secretOrganPledge: (context: any) => context.privateState.secretOrganPledge,
+  secretClearanceHash: (context: any) => context.privateState.secretClearanceHash,
+};
+
+const initialPrivateState: OrganDonorPrivateState = {
+  secretDonorKey: new Uint8Array(32),
+  secretDonorAge: 18,
+  secretBloodType: 1,
+  secretOrganPledge: 1,
+  secretClearanceHash: new Uint8Array(32).fill(1),
+};
 
 const { network, config: networkConfig } = resolveNetwork();
 const SEED = getOrCreateSeed(network);
 
-// ─── Proof server readiness ────────────────────────────────────────────────────
-//
-// The proof-server image is distroless and has no shell, so it can't run a
-// container-side healthcheck. Poll it from the host before we submit anything
-// that needs proofs.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const zkConfigPath = path.resolve(__dirname, '..', 'contracts', 'managed', 'organ-donor-registry');
 
-async function waitForProofServer(maxAttempts = 60, delayMs = 2000): Promise<boolean> {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+async function waitForProofServer(url: string = networkConfig.proofServer, timeoutMs = 30_000): Promise<boolean> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
     try {
-      await fetch(networkConfig.proofServer, {
-        method: 'GET',
-        signal: AbortSignal.timeout(3000),
-      });
-      return true;
-    } catch (err: any) {
-      const code = err?.cause?.code || err?.code || '';
-      if (code !== 'ECONNREFUSED' && code !== 'UND_ERR_CONNECT_TIMEOUT' && code !== 'UND_ERR_SOCKET') {
-        return true;
-      }
-    }
-    if (attempt < maxAttempts) {
-      process.stdout.write(`\r  Waiting for proof server... (${attempt}/${maxAttempts})   `);
-      await new Promise((r) => setTimeout(r, delayMs));
-    }
+      const res = await fetch(url, { method: 'GET' }).catch(() => null);
+      if (res) return true;
+    } catch {}
+    await new Promise((r) => setTimeout(r, 1000));
   }
   return false;
 }
 
-// ─── Compiled contract loading ─────────────────────────────────────────────────
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const zkConfigPath = path.resolve(__dirname, '..', 'contracts', 'managed', 'hello-world');
-const contractPath = path.join(zkConfigPath, 'contract', 'index.js');
-
-if (!fs.existsSync(contractPath)) {
-  console.error('\n❌ Contract not compiled! Run: npm run compile\n');
-  process.exit(1);
-}
-
-const HelloWorld = await import(pathToFileURL(contractPath).href);
-
-const compiledContract = CompiledContract.make('hello-world', HelloWorld.Contract).pipe(
-  CompiledContract.withVacantWitnesses,
-  CompiledContract.withCompiledFileAssets(zkConfigPath),
-);
-
-// ─── Providers ─────────────────────────────────────────────────────────────────
-
 async function createProviders(walletCtx: WalletContext) {
-  // The SDK requires the private-state password to be at least 16 characters.
-  // The default below is a placeholder for local devnet only — set a strong
-  // password via PRIVATE_STATE_PASSWORD when you move to a non-local target.
   const privateStatePassword = process.env.PRIVATE_STATE_PASSWORD?.trim() || 'Local-Devnet-Development-Placeholder-1';
 
   const walletProvider = {
-    // In Midnight.js 4.1.x the WalletProvider interface returns the key objects
-    // (CoinPublicKey / EncPublicKey) directly — no longer hex strings.
     getCoinPublicKey: () => walletCtx.shieldedSecretKeys.coinPublicKey,
     getEncryptionPublicKey: () => walletCtx.shieldedSecretKeys.encryptionPublicKey,
     async balanceTx(tx: any, ttl?: Date) {
-      // balanceUnboundTransaction -> finalizeRecipe is the complete balancing
-      // path in wallet-sdk 1.x; the earlier explicit signRecipe step is gone.
       const recipe = await walletCtx.wallet.balanceUnboundTransaction(
         tx,
         { shieldedSecretKeys: walletCtx.shieldedSecretKeys, dustSecretKey: walletCtx.dustSecretKey },
@@ -112,7 +86,7 @@ async function createProviders(walletCtx: WalletContext) {
 
   return {
     privateStateProvider: levelPrivateStateProvider({
-      privateStateStoreName: 'hello-world-state',
+      privateStateStoreName: 'organ-donor-registry-state',
       accountId,
       privateStoragePasswordProvider: () => privateStatePassword,
     }),
@@ -124,107 +98,73 @@ async function createProviders(walletCtx: WalletContext) {
   };
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────────────
-
 async function main() {
-  console.log('\n╔══════════════════════════════════════════════════════════════╗');
-  console.log(`║  Deploy private-organ-donor-registry to ${network}`);
-  console.log('╚══════════════════════════════════════════════════════════════╝\n');
+  console.log('\n─── Private Organ Donor Registry Deploy ─────────────────────────────────\n');
+  console.log(`  Network: ${network}`);
+  console.log(`  Indexer: ${networkConfig.indexer}`);
+  console.log(`  Node:    ${networkConfig.node}`);
+  console.log(`  Proof:   ${networkConfig.proofServer}\n`);
 
-  const seed = SEED;
-
-  console.log('─── Wallet setup ───────────────────────────────────────────────\n');
-  console.log('  Creating wallet...');
-  const walletCtx = await createWallet({ network, networkConfig, seed });
-  const restoredCount = Object.values(walletCtx.restored).filter(Boolean).length;
-  if (restoredCount > 0) {
-    console.log(`  Restored ${restoredCount}/3 child wallets from .midnight-wallet-state — sync will resume from saved point.`);
-  }
-
-  console.log('  Syncing with network...');
-  console.log('  ℹ  This may take several minutes depending on network size.');
-  console.log('     RPC disconnection messages during sync are normal and can be safely ignored.\n');
-  const syncStart = Date.now();
-  const syncInterval = setInterval(() => {
-    const elapsed = Math.round((Date.now() - syncStart) / 1000);
-    process.stdout.write(`\r  ⏳ Still syncing... (${elapsed}s elapsed)   `);
-  }, 5000);
-  const state = await walletCtx.wallet.waitForSyncedState();
-  clearInterval(syncInterval);
-  process.stdout.write('\r  ✓ Synced with network.                                      \n');
-
-  // Persist sync state now so a later deploy failure doesn't waste the sync work.
-  await persistWalletState(network, walletCtx);
-
-  const address = walletCtx.unshieldedKeystore.getBech32Address();
-  let balance = state.unshielded.balances[unshieldedToken().raw] ?? 0n;
-  console.log(`\n  Wallet Address: ${address}`);
-  console.log(`  Balance: ${balance.toLocaleString()} tNight\n`);
-
-  if (network === 'undeployed' && balance === 0n) {
-    console.error(
-      '\n❌ Genesis-seed wallet has zero NIGHT. The devnet preset may not have minted to it.\n' +
-        '   Check `docker compose ps` and `docker compose logs node`. Then `docker compose down -v` and retry.\n',
-    );
-    await walletCtx.wallet.stop();
+  const contractPath = path.join(zkConfigPath, 'contract', 'index.js');
+  if (!fs.existsSync(contractPath)) {
+    console.error('❌ Compiled contract missing. Please run `npm run compile` first.');
     process.exit(1);
   }
 
-  // Faucet poll for public networks. The wallet has 0 tNIGHT until the user
-  // funds the address from the network's faucet. The display balance is
-  // authoritative here (unlike DUST, tNIGHT shows up immediately once the
-  // faucet tx lands).
-  if (network !== 'undeployed' && networkConfig.faucet) {
-    // Same balance idiom used by check-balance.ts:
-    //   state.unshielded.balances[unshieldedToken().raw] ?? 0n
-    const initialBalance = await Rx.firstValueFrom(walletCtx.wallet.state().pipe(
-      Rx.filter((s) => s.isSynced),
-    ));
-    const initialTNight = initialBalance.unshielded.balances[unshieldedToken().raw] ?? 0n;
-    if (initialTNight === 0n) {
-      console.log('─── Fund Wallet ────────────────────────────────────────────────\n');
-      console.log(`  Wallet address: ${address}`);
-      console.log(`  Faucet:         ${networkConfig.faucet}`);
-      console.log('');
-      console.log('  Waiting for tNIGHT to arrive (poll every 10s)...');
-      const rawTimeout = Number(process.env.MIDNIGHT_FAUCET_TIMEOUT_MS);
-      const timeoutMs = Number.isFinite(rawTimeout) && rawTimeout > 0 ? rawTimeout : 600_000;
-      const start = Date.now();
-      while (true) {
-        await new Promise((r) => setTimeout(r, 10_000));
-        const s = await Rx.firstValueFrom(walletCtx.wallet.state().pipe(Rx.filter((x) => x.isSynced)));
-        const tn = s.unshielded.balances[unshieldedToken().raw] ?? 0n;
-        if (tn > 0n) {
-          console.log(`\n  Funded! tNIGHT balance: ${tn.toLocaleString()}\n`);
-          break;
-        }
-        if (Date.now() - start > timeoutMs) {
-          console.log(`\n  ❌ Funding not received within ${Math.round(timeoutMs / 60_000)} min.`);
-          console.log(`  Address: ${address}`);
-          console.log(`  Faucet:  ${networkConfig.faucet}`);
-          console.log('  Re-run setup after funding — your seed is preserved.\n');
-          await walletCtx.wallet.stop();
-          process.exit(1);
-        }
-        const elapsed = Math.round((Date.now() - start) / 1000);
-        process.stdout.write(`\r  ...still waiting (${elapsed}s elapsed)`);
+  const OrganDonorModule = await import(pathToFileURL(contractPath).href);
+  const compiledContract: any = (CompiledContract as any).make('organ-donor-registry', OrganDonorModule.Contract).pipe(
+    (CompiledContract as any).withWitnesses(witnesses),
+    (CompiledContract as any).withCompiledFileAssets(zkConfigPath),
+  );
+
+  console.log('─── Wallet Initialization ───────────────────────────────────────\n');
+  const walletCtx = await createWallet({ network, networkConfig, seed: SEED });
+  const address = walletCtx.unshieldedKeystore.getBech32Address();
+  console.log(`  Address: ${address}\n`);
+
+  console.log('─── Syncing Wallet ──────────────────────────────────────────────\n');
+  const syncStart = Date.now();
+  const syncInterval = setInterval(() => {
+    const elapsed = Math.round((Date.now() - syncStart) / 1000);
+    process.stdout.write(`\r  ⏳ Syncing... (${elapsed}s elapsed)   `);
+  }, 5000);
+  const initialSyncState = await walletCtx.wallet.waitForSyncedState();
+  clearInterval(syncInterval);
+  process.stdout.write('\r  ✓ Wallet synced!                                             \n\n');
+
+  const initialBalance = initialSyncState.unshielded.balances[unshieldedToken().raw] ?? 0n;
+  console.log(`  tNIGHT balance: ${initialBalance.toLocaleString()}\n`);
+
+  if (initialBalance === 0n && networkConfig.faucet) {
+    console.log('  ⚠ Wallet has 0 tNIGHT. Please fund address at faucet:');
+    console.log(`     ${networkConfig.faucet}`);
+    console.log(`     Address: ${address}\n`);
+    console.log('  Waiting for funding...');
+    const timeoutMs = 15 * 60_000;
+    const start = Date.now();
+    while (true) {
+      await new Promise((r) => setTimeout(r, 10_000));
+      const s = await Rx.firstValueFrom(walletCtx.wallet.state().pipe(Rx.filter((x) => x.isSynced)));
+      const tn = s.unshielded.balances[unshieldedToken().raw] ?? 0n;
+      if (tn > 0n) {
+        console.log(`\n  Funded! tNIGHT balance: ${tn.toLocaleString()}\n`);
+        break;
+      }
+      if (Date.now() - start > timeoutMs) {
+        console.log(`\n  ❌ Funding timeout on network ${network}. Saved wallet state.`);
+        await walletCtx.wallet.stop();
+        process.exit(1);
       }
     }
   }
 
-  // Register for DUST.
-  console.log('─── DUST Token Setup ───────────────────────────────────────────\n');
+  console.log('─── DUST Setup ──────────────────────────────────────────────────\n');
   const dustState = await Rx.firstValueFrom(walletCtx.wallet.state().pipe(Rx.filter((s) => s.isSynced)));
-
   const unregisteredUtxos = dustState.unshielded.availableCoins.filter(
     (c: any) => !c.meta?.registeredForDustGeneration,
   );
   if (unregisteredUtxos.length > 0) {
     console.log(`  Registering ${unregisteredUtxos.length} NIGHT UTXOs for DUST generation...`);
-    // The signDustRegistration callback (3rd arg) already produces a recipe
-    // with N signatures matching N inputs. Do NOT call signRecipe again — that
-    // would double-sign and the chain rejects with InputsSignaturesLengthMismatch
-    // (Custom error 192). Matches upstream example-counter and example-bboard.
     const recipe = await walletCtx.wallet.registerNightUtxosForDustGeneration(
       unregisteredUtxos,
       walletCtx.unshieldedKeystore.getPublicKey(),
@@ -246,123 +186,51 @@ async function main() {
   }
   console.log('  DUST tokens ready!\n');
 
-  // Deploy.
-  console.log('─── Deploy Contract ────────────────────────────────────────────\n');
-
-  console.log('  Checking proof server...');
+  console.log('─── Deploying Contract ──────────────────────────────────────────\n');
   const proofServerReady = await waitForProofServer();
   if (!proofServerReady) {
-    console.log('\n  ❌ Proof server not responding. Run: docker compose up -d\n');
+    console.log('\n  ❌ Proof server unreachable. Ensure proof server docker container is running.\n');
     await walletCtx.wallet.stop();
     process.exit(1);
   }
-  process.stdout.write('\r  Proof server ready!                                 \n');
 
-  console.log('  Setting up providers...');
   const providers = await createProviders(walletCtx);
-
-  // The wallet's reported DUST balance is a *time-projection* of what its
-  // registered NIGHT will eventually generate; the tx-builder spends only
-  // what the next block's timestamp accounts for, which lags wall-clock by
-  // ~1 block on a fresh devnet. Sleeping ~1 block-time before attempt 1
-  // closes that gap in the common case; the retry loop covers outliers.
-  process.stdout.write('  Generating DUST...');
   await new Promise((r) => setTimeout(r, 6000));
-  process.stdout.write(' done.\n');
 
-  console.log('  Deploying contract...\n');
-
-  // Fallback timing. The 6s pre-pause above handles the common case; this
-  // loop covers genuine outliers (slow blocks, proof-server worker-pool
-  // settling). Earlier 2s retries caused CI flakes where attempt 2's /prove
-  // hit the proof-server before it had drained attempt 1's state — 5s gives
-  // it room to settle between attempts. 20 × 5 = 100s total budget.
   const MAX_RETRIES = 20;
   const RETRY_DELAY_MS = 5000;
   let deployed: Awaited<ReturnType<typeof deployContract>> | undefined;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      // Midnight.js 4.1.x supplies private state via privateStateId +
-      // initialPrivateState (empty here — the hello-world contract has no
-      // witnesses). args is the contract constructor's arguments: empty for
-      // hello-world's no-arg constructor. (Statically-typed contracts can omit
-      // args entirely; this script loads the contract dynamically, so the
-      // conditional args type widens to any[] and an explicit [] is required.)
       deployed = await deployContract(providers, {
         compiledContract: compiledContract as any,
         args: [],
         privateStateId: PRIVATE_STATE_ID,
-        initialPrivateState: {},
+        initialPrivateState,
       });
       break;
     } catch (err: any) {
       const errMsg = err?.message || err?.toString() || '';
-      const errCause = err?.cause?.message || err?.cause?.toString() || '';
-      const fullError = `${errMsg} ${errCause}`;
-
-      // DUST shortage is the most common transient failure on a fresh devnet —
-      // check it BEFORE proof-server connectivity, because dust-balancing errors
-      // can surface through proof-server-shaped messages (the wallet talks to
-      // the proof-server while building the dust portion of the tx).
-      const isDustShortage =
-        fullError.includes('Not enough Dust') ||
-        fullError.includes('Insufficient Funds') ||
-        fullError.includes('could not balance dust');
-
-      // Quiet the first DUST-shortage retry: it's the expected race between
-      // wall-clock projection and block-timestamp accounting and the loud
-      // `Insufficient Funds: <huge number>` message scares first-time users.
-      // Real failures still get the full diagnostic from attempt 2 onward.
-      if (!(isDustShortage && attempt === 1)) {
-        console.error(`\n  Attempt ${attempt} error: ${errMsg}`);
-        if (errCause && errCause !== errMsg) console.error(`  Cause: ${errCause}`);
-      }
-
-      if (
-        !isDustShortage &&
-        (fullError.includes('Failed to connect to Proof Server') ||
-          fullError.includes('connect ECONNREFUSED 127.0.0.1:6300'))
-      ) {
-        console.log('  ❌ Proof server unreachable. Run: docker compose up -d\n');
-        await walletCtx.wallet.stop();
-        process.exit(1);
-      }
-
-      if (isDustShortage) {
-        const currentState = await walletCtx.wallet.waitForSyncedState();
-        const dustBalance = currentState.dust.balance(new Date());
-        if (attempt < MAX_RETRIES) {
-          if (attempt === 1) {
-            console.log(`  Still generating DUST, retrying in ${RETRY_DELAY_MS / 1000}s...`);
-          } else {
-            console.log(`  ⏳ DUST balance: ${dustBalance.toLocaleString()} (attempt ${attempt}/${MAX_RETRIES}); retrying in ${RETRY_DELAY_MS / 1000}s...`);
-          }
-          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-        } else {
-          console.log(`  ❌ Not enough DUST after ${MAX_RETRIES} retries (current: ${dustBalance.toLocaleString()})`);
-          await walletCtx.wallet.stop();
-          process.exit(1);
-        }
+      console.error(`  Attempt ${attempt} error: ${errMsg}`);
+      if (attempt < MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
       } else {
         throw err;
       }
     }
   }
 
-  if (!deployed) throw new Error('Deployment failed after all retries');
+  if (!deployed) throw new Error('Deployment failed');
 
   const contractAddress = deployed.deployTxData.public.contractAddress;
-  console.log('  ✅ Contract deployed successfully!\n');
+  console.log('  ✅ Private Organ Donor Registry deployed successfully!\n');
   console.log(`  Contract Address: ${contractAddress}\n`);
 
   recordDeployment(network, contractAddress, address.toString());
-  console.log('  Saved to .midnight-state.json\n');
-
   await persistWalletState(network, walletCtx);
   await walletCtx.wallet.stop();
-  console.log('─── Deployment complete ────────────────────────────────────────\n');
-  console.log('  Next: npm run cli\n');
+  console.log('─── Deployment Complete ────────────────────────────────────────\n');
 }
 
 main().catch((err) => {

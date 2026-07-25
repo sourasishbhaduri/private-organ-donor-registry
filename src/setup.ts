@@ -5,9 +5,10 @@ import { spawnSync } from 'node:child_process';
 import { resolveNetwork, setActiveNetwork, parseNetworkFlag } from './network';
 
 function run(cmd: string, args: string[]): void {
-  const r = spawnSync(cmd, args, { stdio: 'inherit', shell: false });
+  const executable = cmd === 'docker' && spawnSync('docker', ['--version']).status !== 0 ? 'docker.exe' : cmd;
+  const r = spawnSync(executable, args, { stdio: 'inherit', shell: false });
   if (r.status !== 0) {
-    process.stderr.write(`\nCommand failed: ${cmd} ${args.join(' ')}\n`);
+    process.stderr.write(`\nCommand failed: ${executable} ${args.join(' ')}\n`);
     process.exit(r.status ?? 1);
   }
 }
