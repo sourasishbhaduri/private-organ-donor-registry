@@ -1,0 +1,45 @@
+name: Midnight dApp CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Compact Compiler
+        run: |
+          mkdir -p ~/.local/bin
+          curl -sSL https://releases.midnight.network/compact/latest/install.sh | bash || true
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Compile Compact Smart Contract
+        run: npm run compile
+
+      - name: Run Unit Tests
+        run: npm test
+
+      - name: Type-check and Build Root TypeScript
+        run: npm run build
+
+      - name: Build Frontend Application
+        run: |
+          cd frontend
+          npm ci
+          npm run build
