@@ -1,188 +1,135 @@
-# private-organ-donor-registry
+# Private Organ Donor Registry (Midnight Network dApp)
 
-A Midnight Network smart contract scaffolded with create-mn-app.
+> **Level 3 Category**: Confidential Credentials / Age & Eligibility Gate  
+> **Blockchain**: Midnight Network (Zero-Knowledge Smart Contracts)  
+> **Local Deployment Status**: ✅ Deployed & Verified (`1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3`)
 
-## Quick start
+---
 
-Requirements: Node 22, Docker (with Compose v2), and the Compact compiler at the version pinned in `.compact-version` at the create-mn-app repo root (the version this project was scaffolded against).
+## 1. System Environment Verification Report
 
+- **OS & Shell**: Linux WSL2 Ubuntu 22.04 LTS (`6.18.33.2-microsoft-standard-WSL2 x86_64`)
+- **Node.js**: `v22.23.1` (`/home/sayan/.nvm/versions/node/v22.23.1/bin/node`)
+- **npm**: `10.9.8` (`/home/sayan/.nvm/versions/node/v22.23.1/bin/npm`)
+- **Docker**: Docker Engine 28.0+ via Docker Desktop WSL integration (`docker.exe compose`)
+- **Compact Compiler**: `compact 0.5.1` (circuit compiler `0.31.1`) at `/home/sayan/.local/bin/compact`
+- **Project Directory**: `/home/sayan/midnight-projects/private-organ-donor-registry` (Native WSL path)
+- **Proof Server**: Running locally on port `6300` (`http://127.0.0.1:6300`)
+
+---
+
+## 2. Product Proposal & Architecture
+
+Organ donation requires strict eligibility verification (age ≥ 18, valid voluntary consent, ABO/Rh blood group matching, authorized medical clearance). Traditional public registries expose sensitive personal identity and health records, deterring potential donors due to privacy concerns.
+
+**Private Organ Donor Registry** leverages Midnight's Zero-Knowledge (ZK) smart contracts in Compact to establish an anonymous, privacy-preserving organ donor network:
+
+1. **Eligibility Gate (`age >= 18`)**: Donors prove they satisfy legal age requirements inside a ZK proof without revealing their exact age or date of birth.
+2. **Confidential Credentials**: Hospital medical clearance signatures and secret donor identity keys are verified off-chain via private witnesses.
+3. **Anonymized Supply Tallies**: ABO/Rh blood availability counts are updated publicly to assist transplant authorities without linking donor identities to blood groups.
+
+---
+
+## 3. Privacy Model
+
+| Dimension | Visibility | Description |
+| :--- | :--- | :--- |
+| **Donor Identity & Secret Key** | 🔒 Private Witness | Kept strictly off-chain. Observers cannot derive donor identity or SSN. |
+| **Exact Age** | 🔒 Private Witness | Proved `age >= 18` in ZK; exact age is never exposed on-chain. |
+| **Medical Clearance Signature** | 🔒 Private Witness | Verified inside ZK circuit; raw signature token remains off-chain. |
+| **Public Commitment Hash** | 🌐 Disclosed On-Chain | `disclose(commitment)` — `0x...` SHA256 commitment hash. |
+| **Anonymized Blood Supply** | 🌐 Disclosed On-Chain | `disclose(bloodType)` — Anonymous category count increment. |
+| **Total Registered Donors** | 🌐 Disclosed On-Chain | `totalDonors` incremented publicly. |
+
+---
+
+## 4. Quick Start & Execution Commands
+
+### Prerequisites
+Ensure Docker is running and Node 22+ is available in WSL.
+
+### 1. Compile Compact Contract
 ```bash
-npm install
-npm run setup
+npm run compile
+```
+Compiles `contracts/organ-donor-registry.compact` into `contracts/managed/organ-donor-registry`.
+
+### 2. Local Stack Setup & Deployment
+```bash
+npm run setup -- --network undeployed
+```
+Starts local devnet containers (node, indexer, proof server), compiles contract, funds wallet, registers DUST UTXOs, and deploys contract to local chain.
+
+### 3. Run Interactive CLI
+```bash
+npm run cli
+```
+Interactive CLI options:
+1. Register as Anonymous Organ Donor (Generates ZK proof).
+2. Query Public Anonymous Ledger State (Tally & Supply).
+3. Privately Verify Donor Eligibility.
+4. Check Wallet Balances.
+
+### 4. Run Unit Tests
+```bash
+npm test
+```
+Runs 11 automated unit tests covering age gating, blood group validation, ZK commitment hashing, bitmask organ pledge encoding, and configuration parsers.
+
+### 5. Run End-to-End Smoke Test
+```bash
 npm run test:e2e
 ```
+Connects to deployed contract on network and queries indexed ledger state.
 
-`npm run setup` runs end-to-end with no prompts:
-
-1. `docker compose up -d --wait` — starts a local Midnight devnet (node, indexer, proof-server) and blocks until all three pass their healthchecks.
-2. `npm run compile` — compiles `contracts/hello-world.compact` to `contracts/managed/hello-world/`.
-3. `npm run deploy` — derives the genesis-seed wallet (NIGHT pre-minted), registers UTXOs for DUST generation, deploys the contract, writes `.midnight-state.json`.
-
-`npm run test:e2e` reconnects to the deployed contract and reads its ledger state. Exits 0 if the contract is live and indexable.
-
-## Local devnet
-
-The project ships its own devnet via `docker-compose.yml`:
-
-| Service        | Port | Purpose                                         |
-| -------------- | ---- | ----------------------------------------------- |
-| `node`         | 9944 | Midnight node, `dev` chain preset               |
-| `indexer`      | 8088 | GraphQL indexer for chain state                 |
-| `proof-server` | 6300 | Generates ZK proofs for contract transactions   |
-
-State lives in container-managed volumes. Tear everything down with:
-
+### 6. Start Web Frontend Application
 ```bash
-docker compose down -v
+cd frontend
+npm install
+npm run dev
 ```
+Launches Vite React dashboard at `http://localhost:3000`.
 
-That removes all containers, networks, and volumes. The next `npm run setup` starts from a clean slate.
+---
 
-## ⚠️ LOCAL DEVNET ONLY
+## 5. Deployment Status
 
-The deploy script uses a well-known genesis seed (`0000…0001`) so the
-pre-minted NIGHT in the `dev` chain preset is immediately available. **Do
-not use this seed against Preprod, mainnet, or any environment that
-handles real value** — anyone running this devnet has full access to
-funds at this seed.
+- **Undeployed (Local Devnet)**: ✅ **Deployed & Operational**
+  - Contract Address: `1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3`
+  - Seed preserved in `.midnight-state.json`.
 
-## Networks
+- **Preprod Network Setup**:
+  - Endpoint: `https://rpc.preprod.midnight.network`
+  - Indexer: `https://indexer.preprod.midnight.network/api/v4/graphql`
+  - If Preprod wallet sync blocks due to indexer rate limits, setup script safely preserves seed state and logs wallet address for faucet funding.
 
-This DApp supports three networks:
+---
 
-| Network | When to use | Default? |
-|---|---|---|
-| `undeployed` | Local devnet bundled in `docker-compose.yml`. Genesis seed is hardcoded; no funding needed. | yes |
-| `preview` | Public preview testnet. Faucet at `https://midnight-tmnight-preview.nethermind.dev`. |  |
-| `preprod` | Public preprod testnet. Faucet at `https://midnight-tmnight-preprod.nethermind.dev`. |  |
+## 6. Submission Checklists
 
-The active network is **sticky**: whichever network you last interacted
-with stays active until you switch. Any command run with `--network <name>`
-also sets that network active for subsequent commands. The default on a
-fresh project is `undeployed` (local devnet).
+### Level 1 Checklist
+- [x] Compact contract with public ledger state (`totalDonors`, `registeredCommitments`, `bloodGroupCounts`) and private witnesses.
+- [x] Explicit `disclose()` used deliberately only for public commitments and anonymized tallies.
+- [x] `contracts/managed/` generated artifacts present.
+- [x] Local deployment via `npm run setup -- --network undeployed`.
+- [x] Interactive CLI script (`npm run cli`).
+- [x] Comprehensive README with setup and privacy model.
 
-```sh
-npm run setup -- --network preview   # runs on preview AND makes it active
-npm run cli                          # still uses preview
-npm run check-balance                # still uses preview
-```
+### Level 2 Checklist
+- [x] Frontend application built with Vite + React + TypeScript + Glassmorphism CSS.
+- [x] Lace Wallet connect / disconnect and status display.
+- [x] Contract integration loading environment variables (`VITE_CONTRACT_ADDRESS`, `VITE_NETWORK`, `VITE_PROOF_SERVER_URL`).
+- [x] ZK proof submission without displaying private inputs.
+- [x] Prepared for Vercel/Netlify deployment with `.env.example`.
 
-You can also switch without running anything else:
+### Level 3 Checklist
+- [x] 11+ automated unit tests (`npm test`).
+- [x] GitHub Actions CI/CD workflow (`.github/workflows/ci.yml`).
+- [x] Product Proposal for Confidential Credentials / Age Gate.
+- [x] Polished UX with loading, error, success, and disconnected states.
+- [x] 10+ clean, structured git commits.
 
-```sh
-npm run network preview         # active network is now preview
-npm run network                 # prints current active network
-npm run network undeployed      # switch back to local devnet
-```
+---
 
-### How wallets work across networks
-
-- `undeployed` uses a hardcoded genesis seed. Local devnet pre-funds it.
-- `preview` and `preprod` generate a fresh seed on first use and store it
-  in `.midnight-state.json` (gitignored). The seed survives switching
-  networks — switch back later and your funded wallet returns.
-- **Back up your seed** if you fund a public-network wallet you care
-  about. Open `.midnight-state.json` and copy the relevant
-  `wallets.<network>.seed` value to a safe place.
-
-### Funding a public-network wallet
-
-On the first run with `--network preview` (or `preprod`):
-
-1. `setup` will print your wallet address and the faucet URL.
-2. Open the faucet URL, paste the address, request tNIGHT.
-3. `setup` polls the wallet balance every 10 s and continues automatically
-   once funds arrive.
-4. The default poll budget is 10 minutes. Override with
-   `MIDNIGHT_FAUCET_TIMEOUT_MS=1800000` (30 min) for unattended runs.
-
-If the faucet is slow or the script times out, your seed is preserved.
-Re-run `npm run setup -- --network preview` once the funds land.
-
-### Environment overrides
-
-These env vars override the active network's config (no per-network
-suffix — they apply to whichever network is active for the run):
-
-| Variable | Effect |
-|---|---|
-| `MIDNIGHT_WALLET_SEED` | Use this seed instead of generating/persisting one. Useful for CI with a pre-funded wallet. |
-| `MIDNIGHT_INDEXER_URL` | Override the indexer GraphQL URL. |
-| `MIDNIGHT_INDEXER_WS_URL` | Override the indexer WS URL. |
-| `MIDNIGHT_NODE_URL` | Override the node RPC URL. |
-| `MIDNIGHT_FAUCET_URL` | Override the faucet URL printed during setup. |
-| `MIDNIGHT_PROOF_SERVER_URL` | Override the proof server URL — set to a public proof server (e.g. `https://lace-proof-pub.preview.midnight.network`) to skip running one locally. |
-| `MIDNIGHT_FAUCET_TIMEOUT_MS` | Faucet poll budget in milliseconds (default 600000 = 10 min). |
-
-By default all networks use the **local** proof server. Public proof
-servers exist (see the env override above) but the local default keeps
-your witness data on your machine and avoids depending on a remote
-service for the deploy hot path.
-
-### Switching back to local devnet
-
-```sh
-npm run network undeployed     # or: npm run setup -- --network undeployed
-```
-
-Your preview/preprod wallet seeds and deploy addresses stay in
-`.midnight-state.json`. Switch back later, and they're still there.
-
-### Wallet sync cache
-
-After each `deploy`, `cli`, or `check-balance` run, the scripts serialize the
-wallet's synced state to `.midnight-wallet-state/<network>/` (gitignored).
-The next run on the same network restores from that snapshot and only catches
-up to the latest block instead of replaying from genesis — meaningful on
-`preview` / `preprod` where a from-seed sync takes minutes.
-
-If the cache is stale or corrupt (e.g. after an SDK upgrade with an
-incompatible state format) the wallet falls back to a fresh from-seed sync
-with a one-line warning. `npm run clean` removes the cache along with other
-generated state.
-
-## Available scripts
-
-| Script                  | Description                                                    |
-| ----------------------- | -------------------------------------------------------------- |
-| `npm run setup`         | One-shot: start devnet, compile, deploy.                       |
-| `npm run compile`       | Compile the Compact contract.                                  |
-| `npm run deploy`        | Deploy the compiled contract (requires devnet up + compiled).  |
-| `npm run cli`           | Interactive CLI to call circuits on the deployed contract.     |
-| `npm run check-balance` | Print the genesis-seed wallet's NIGHT and DUST balances.       |
-| `npm run test:e2e`      | Smoke + read-back check against the deployed contract.         |
-| `npm run clean`         | Remove `contracts/managed/`, `.midnight-state.json`, and `.midnight-wallet-state/`. |
-| `npm run proof-server:start` / `:stop` | Compose lifecycle for just the proof-server service. |
-
-## Project structure
-
-```
-private-organ-donor-registry/
-├── contracts/
-│   └── hello-world.compact     # Compact source
-├── scripts/
-│   └── e2e-check.ts            # smoke + read-back
-├── src/
-│   ├── network.ts              # network selection + state file management
-│   ├── wallet.ts               # wallet construction + sync-state cache
-│   ├── setup.ts                # orchestrator for `npm run setup`
-│   ├── deploy.ts               # deploy the contract
-│   ├── cli.ts                  # interact with deployed contract
-│   └── check-balance.ts        # NIGHT / DUST balance
-├── docker-compose.yml          # node + indexer + proof-server
-├── .midnight-state.json        # written by deploy (gitignored)
-├── .midnight-wallet-state/     # serialized sync state per network (gitignored)
-├── package.json
-└── tsconfig.json
-```
-
-## Compact compiler version
-
-`.compact-version` at the create-mn-app repo root pinned the compiler
-version this project was scaffolded against. To upgrade your local
-compiler to that version:
-
-```bash
-compact update <version>
-compact use <version>
-```
+## License
+MIT License
