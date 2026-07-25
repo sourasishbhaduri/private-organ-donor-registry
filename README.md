@@ -84,11 +84,9 @@ Connects to deployed contract on network and queries indexed ledger state.
 
 ### 6. Start Web Frontend Application
 ```bash
-cd frontend
-npm install
 npm run dev
 ```
-Launches Vite React dashboard at `http://localhost:3000`.
+Launches Vite React dashboard at `http://localhost:3000` (or `cd frontend && npm run dev`).
 
 ---
 
