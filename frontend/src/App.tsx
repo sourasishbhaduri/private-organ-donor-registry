@@ -136,28 +136,28 @@ export const App: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px', flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveTab('register')}
-            className={activeTab === 'register' ? 'btn-primary' : 'btn-secondary'}
+            className={activeTab === 'register' ? 'tab-btn active' : 'tab-btn'}
           >
             <UserPlus size={18} /> Register as Anonymous Donor
           </button>
 
           <button
             onClick={() => setActiveTab('ledger')}
-            className={activeTab === 'ledger' ? 'btn-primary' : 'btn-secondary'}
+            className={activeTab === 'ledger' ? 'tab-btn active' : 'tab-btn'}
           >
             <Database size={18} /> Public Ledger Tally ({ledgerData.totalDonors})
           </button>
 
           <button
             onClick={() => setActiveTab('verify')}
-            className={activeTab === 'verify' ? 'btn-primary' : 'btn-secondary'}
+            className={activeTab === 'verify' ? 'tab-btn active' : 'tab-btn'}
           >
             <ShieldCheck size={18} /> Private Eligibility Check
           </button>
 
           <button
             onClick={() => setActiveTab('privacy')}
-            className={activeTab === 'privacy' ? 'btn-primary' : 'btn-secondary'}
+            className={activeTab === 'privacy' ? 'tab-btn active' : 'tab-btn'}
           >
             <Info size={18} /> ZK Privacy Model
           </button>

@@ -25,14 +25,14 @@ export const PrivateVerificationModal: React.FC<PrivateVerificationModalProps> =
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '28px' }}>
+    <div className="saas-card" style={{ padding: '28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
         <div style={{ background: 'rgba(139, 92, 246, 0.15)', padding: '10px', borderRadius: '10px', color: '#8b5cf6' }}>
           <KeyRound size={22} />
         </div>
         <div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Private Donor Eligibility Verification</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             Prove you are a registered, eligible donor without revealing your identity or exact age on-chain.
           </p>
         </div>
@@ -40,11 +40,11 @@ export const PrivateVerificationModal: React.FC<PrivateVerificationModalProps> =
 
       <form onSubmit={handleVerify} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        <div className="input-group">
-          <label className="input-label">Secret Donor ID / Passphrase</label>
+        <div className="form-group">
+          <label className="form-label">Secret Donor ID / Passphrase</label>
           <input
             type="password"
-            className="input-field"
+            className="form-input"
             placeholder="Enter your secret donor passphrase"
             value={secretId}
             onChange={(e) => setSecretId(e.target.value)}
@@ -53,22 +53,22 @@ export const PrivateVerificationModal: React.FC<PrivateVerificationModalProps> =
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-          <div className="input-group">
-            <label className="input-label">Age</label>
+          <div className="form-group">
+            <label className="form-label">Age</label>
             <input
               type="number"
               min={18}
-              className="input-field"
+              className="form-input"
               value={age}
               onChange={(e) => setAge(parseInt(e.target.value, 10) || 18)}
               required
             />
           </div>
 
-          <div className="input-group">
-            <label className="input-label">Blood Group Code [1-8]</label>
+          <div className="form-group">
+            <label className="form-label">Blood Group Code [1-8]</label>
             <select
-              className="input-field"
+              className="form-input"
               value={bloodType}
               onChange={(e) => setBloodType(parseInt(e.target.value, 10))}
             >
@@ -84,18 +84,18 @@ export const PrivateVerificationModal: React.FC<PrivateVerificationModalProps> =
           </div>
         </div>
 
-        <div className="input-group">
-          <label className="input-label">Medical Clearance Token Seed</label>
+        <div className="form-group">
+          <label className="form-label">Medical Clearance Token Seed</label>
           <input
             type="text"
-            className="input-field font-mono"
+            className="form-input font-mono"
             value={clearanceSeed}
             onChange={(e) => setClearanceSeed(e.target.value)}
             required
           />
         </div>
 
-        <button type="submit" className="btn-secondary" disabled={isVerifying || !secretId} style={{ marginTop: '8px', justifyContent: 'center', padding: '12px' }}>
+        <button type="submit" className="btn-saas-primary" disabled={isVerifying || !secretId} style={{ marginTop: '8px', justifyContent: 'center', padding: '12px' }}>
           {isVerifying ? (
             <>
               <Cpu size={16} className="animate-spin" /> Verifying ZK Proof...
@@ -132,7 +132,7 @@ export const PrivateVerificationModal: React.FC<PrivateVerificationModalProps> =
             <h4 style={{ color: verificationOutput.eligible ? '#34d399' : '#fb7185', fontWeight: 600, fontSize: '0.95rem' }}>
               {verificationOutput.eligible ? 'ZK Verification Succeeded! Eligible & Registered' : 'ZK Verification Failed / Not Found'}
             </h4>
-            <p className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+            <p className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
               Commitment: {verificationOutput.commitment}
             </p>
           </div>

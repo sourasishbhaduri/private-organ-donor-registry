@@ -21,7 +21,7 @@ const BLOOD_LABELS: Record<number, { name: string; tag: string }> = {
 
 export const PublicLedgerState: React.FC<PublicLedgerStateProps> = ({ data, onRefresh, isLoading }) => {
   return (
-    <div className="glass-panel" style={{ padding: '28px' }}>
+    <div className="saas-card" style={{ padding: '28px' }}>
       
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
@@ -31,14 +31,14 @@ export const PublicLedgerState: React.FC<PublicLedgerStateProps> = ({ data, onRe
           </div>
           <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Public Anonymous Ledger State</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Real-time on-chain tally of registered donors & anonymized blood supply.
             </p>
           </div>
         </div>
         <button
           onClick={onRefresh}
-          className="btn-secondary"
+          className="btn-saas-secondary"
           disabled={isLoading}
           style={{ padding: '8px 14px', fontSize: '0.85rem' }}
         >
@@ -51,29 +51,29 @@ export const PublicLedgerState: React.FC<PublicLedgerStateProps> = ({ data, onRe
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         
         {/* Total Donors Counter */}
-        <div className="glass-card" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(17, 24, 39, 0.6) 100%)' }}>
+        <div className="saas-card" style={{ background: '#f8fafc' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Registered Donors</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Total Registered Donors</span>
             <Users size={18} color="#10b981" />
           </div>
           <div style={{ fontSize: '2rem', fontWeight: 800, color: '#34d399' }} className="font-mono">
             {data.totalDonors.toLocaleString()}
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>
             🔒 Identities 100% Zero-Knowledge Protected
           </div>
         </div>
 
         {/* Ledger Status */}
-        <div className="glass-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(17, 24, 39, 0.6) 100%)' }}>
+        <div className="saas-card" style={{ background: '#f8fafc' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Contract Status</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Contract Status</span>
             <Activity size={18} color="#3b82f6" />
           </div>
           <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }} /> Active & Indexed
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '8px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '8px' }}>
             {data.lastUpdated ? `Last Sync: ${data.lastUpdated.toLocaleTimeString()}` : 'Connected to Midnight'}
           </div>
         </div>
@@ -93,7 +93,7 @@ export const PublicLedgerState: React.FC<PublicLedgerStateProps> = ({ data, onRe
             return (
               <div
                 key={code}
-                className="glass-card"
+                className="saas-card"
                 style={{
                   padding: '14px',
                   display: 'flex',
@@ -107,11 +107,11 @@ export const PublicLedgerState: React.FC<PublicLedgerStateProps> = ({ data, onRe
                   <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f3f4f6' }}>
                     Type {meta.name}
                   </span>
-                  <span className="font-mono" style={{ fontSize: '1.25rem', fontWeight: 800, color: count > 0 ? '#34d399' : 'var(--text-dim)' }}>
+                  <span className="font-mono" style={{ fontSize: '1.25rem', fontWeight: 800, color: count > 0 ? '#34d399' : 'var(--text-tertiary)' }}>
                     {count}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
                   {meta.tag}
                 </div>
               </div>

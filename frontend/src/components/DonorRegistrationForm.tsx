@@ -64,7 +64,7 @@ export const DonorRegistrationForm: React.FC<DonorRegistrationFormProps> = ({ on
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '28px' }}>
+    <div className="saas-card" style={{ padding: '28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '10px', borderRadius: '10px', color: '#10b981' }}>
@@ -72,12 +72,12 @@ export const DonorRegistrationForm: React.FC<DonorRegistrationFormProps> = ({ on
           </div>
           <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Anonymous Donor Registration</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Generates a Zero-Knowledge Proof verifying age & eligibility without exposing identity.
             </p>
           </div>
         </div>
-        <span className="badge badge-emerald">
+        <span className="badge-pill badge-green">
           <Shield size={12} /> ZK Circuit Active
         </span>
       </div>
@@ -85,45 +85,45 @@ export const DonorRegistrationForm: React.FC<DonorRegistrationFormProps> = ({ on
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
         {/* Secret Donor Identity */}
-        <div className="input-group">
-          <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div className="form-group">
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Lock size={14} color="#10b981" /> Secret Donor Identity / Passphrase (Off-Chain Private Input)
           </label>
           <input
             type="password"
-            className="input-field"
+            className="form-input"
             placeholder="e.g. secret-donor-passphrase-88392"
             value={secretId}
             onChange={(e) => setSecretId(e.target.value)}
             required
           />
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
             🔒 Never uploaded or stored on-chain. Only used locally to prove ownership of donor commitment.
           </span>
         </div>
 
         {/* Age & Blood Type Selection */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-          <div className="input-group">
-            <label className="input-label">Donor Age (Verified in ZK, min 18)</label>
+          <div className="form-group">
+            <label className="form-label">Donor Age (Verified in ZK, min 18)</label>
             <input
               type="number"
               min={18}
               max={120}
-              className="input-field"
+              className="form-input"
               value={age}
               onChange={(e) => setAge(parseInt(e.target.value, 10) || 18)}
               required
             />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
               Proves age ≥ 18 inside ZK proof without disclosing exact age.
             </span>
           </div>
 
-          <div className="input-group">
-            <label className="input-label">ABO/Rh Blood Group</label>
+          <div className="form-group">
+            <label className="form-label">ABO/Rh Blood Group</label>
             <select
-              className="input-field"
+              className="form-input"
               value={bloodType}
               onChange={(e) => setBloodType(parseInt(e.target.value, 10))}
             >
@@ -133,15 +133,15 @@ export const DonorRegistrationForm: React.FC<DonorRegistrationFormProps> = ({ on
                 </option>
               ))}
             </select>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
               Updates anonymous supply tally for hospitals without linking donor identity.
             </span>
           </div>
         </div>
 
         {/* Organ Pledges Selection */}
-        <div className="input-group">
-          <label className="input-label">Pledged Organs (Select at least one)</label>
+        <div className="form-group">
+          <label className="form-label">Pledged Organs (Select at least one)</label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', marginTop: '6px' }}>
             {ORGANS.map((organ) => {
               const selected = pledgedOrgans.includes(organ.bit);
@@ -155,7 +155,7 @@ export const DonorRegistrationForm: React.FC<DonorRegistrationFormProps> = ({ on
                     border: `1px solid ${selected ? '#10b981' : 'var(--border-glass)'}`,
                     borderRadius: '8px',
                     padding: '10px 12px',
-                    color: selected ? '#34d399' : 'var(--text-muted)',
+                    color: selected ? '#34d399' : 'var(--text-secondary)',
                     fontWeight: selected ? 600 : 400,
                     cursor: 'pointer',
                     fontSize: '0.85rem',
@@ -174,25 +174,25 @@ export const DonorRegistrationForm: React.FC<DonorRegistrationFormProps> = ({ on
         </div>
 
         {/* Hospital Medical Clearance */}
-        <div className="input-group">
-          <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div className="form-group">
+          <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <FileCheck size={14} color="#3b82f6" /> Medical Clearance Signature / Token Seed
           </label>
           <input
             type="text"
-            className="input-field font-mono"
+            className="form-input font-mono"
             value={clearanceSeed}
             onChange={(e) => setClearanceSeed(e.target.value)}
             required
           />
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
             Cryptographic proof from an authorized medical board or hospital node.
           </span>
         </div>
 
         {/* Submit Action */}
         <div style={{ marginTop: '8px' }}>
-          <button type="submit" className="btn-primary" disabled={isSubmitting || !secretId} style={{ width: '100%', justifyContent: 'center', padding: '14px' }}>
+          <button type="submit" className="btn-saas-primary" disabled={isSubmitting || !secretId} style={{ width: '100%', justifyContent: 'center', padding: '14px' }}>
             {isSubmitting ? (
               <>
                 <Cpu size={18} className="animate-spin" /> Generating ZK Proof & Submitting to Midnight...
@@ -232,14 +232,14 @@ export const DonorRegistrationForm: React.FC<DonorRegistrationFormProps> = ({ on
             {resultStatus.success ? (
               <div style={{ marginTop: '6px', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div>
-                  <span style={{ color: 'var(--text-muted)' }}>Public Commitment: </span>
+                  <span style={{ color: 'var(--text-secondary)' }}>Public Commitment: </span>
                   <span className="font-mono" style={{ color: '#34d399', wordBreak: 'break-all' }}>
                     {resultStatus.commitment}
                   </span>
                 </div>
                 {resultStatus.txHash && (
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Tx Hash: </span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Tx Hash: </span>
                     <span className="font-mono" style={{ color: '#60a5fa', wordBreak: 'break-all' }}>
                       {resultStatus.txHash}
                     </span>
