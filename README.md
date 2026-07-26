@@ -2,78 +2,83 @@
 
 A privacy-preserving zero-knowledge organ donor registry built on the Midnight Network using Compact smart contracts.
 
-![Landing Page](./assets/landing-page.png)
-![Public Ledger Tally](./assets/ledger-tally.png)
+## Contract Address
 
-## 🚀 Live Demo, Video & Repository
-- **🌐 Live Web Application**: https://private-organ-donor-registry.vercel.app/
-- **📺 YouTube Demo Video**: [Add your YouTube Demo Link]
-- **📦 GitHub Repository**: https://github.com/sourasishbhaduri/private-organ-donor-registry
-- **⚙️ CI/CD Workflow**: `.github/workflows/ci.yml`
+| Network | Contract Address |
+|---------|------------------|
+| Preprod | `<YOUR_DEPLOYED_CONTRACT_ADDRESS>` |
 
-## 📋 Challenge Requirements & Passing Checklist
-- [x] **Fully Functional Privacy dApp**: Meaningful use of Midnight's Zero-Knowledge privacy model to register donors anonymously.
-- [x] **Live Demo Deployment**: https://private-organ-donor-registry.vercel.app/
-- [x] **Demo Video (Lace Wallet + ZK Circuit Call)**: [Add your YouTube Demo Link]
-- [x] **Passing Test Suite**: 11/11 Vitest unit tests passing (`npm test`)
-- [x] **CI/CD Pipeline Running**: GitHub Actions workflow running automated build & tests (`.github/workflows/ci.yml`)
-- [x] **Public GitHub Repository**: https://github.com/sourasishbhaduri/private-organ-donor-registry
-- [x] **Deployed Smart Contract**: `0x1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3`
-- [x] **On-Chain Explorer Verification**: Verify Contract on Midnight Preprod Explorer
-- [x] **Browser Wallet Integration**: Directly connects to user's Midnight Lace Wallet (`window.midnight.mnLace` / `window.midnight.lace`)
-- [x] **Lace Wallet Connect / Disconnect Lifecycle**: Full session management with event prompts and error handling
-- [x] **16+ Meaningful Commits**: Verified structured commit history in main branch
+## Features
+- **Anonymous Donor Registration**: Register as an organ donor without revealing your identity on the public ledger.
+- **ZK Age Verification**: Prove you are over 18 without revealing your exact age.
+- **Anonymized Blood Availability Tally**: Track the total availability of various blood types globally without compromising the privacy of the individual donors.
+- **Lace Wallet Integration**: Seamless, secure authentication using the Midnight Lace Wallet extension.
 
-## 🛡️ Midnight Privacy Model: What an Observer Learns vs Cannot Learn
+## What This Project Does
+This project enables individuals to securely pledge their organs for donation while maintaining strict privacy. Because of Midnight's zero-knowledge proofs, hospitals can see an aggregated view of the available blood types and pledged organs, but the individual identities, exact ages, and sensitive data of the donors are protected and cannot be linked to the public ledger data by an outside observer.
 
-**❌ What an Observer CANNOT Learn (Kept Strictly Private):**
+## Privacy Model
+**What an Observer CANNOT Learn (Private Information):**
 - **Raw Donor Passphrase / Identity**: The secret donor passphrase is executed purely in local ZK witnesses and never transmitted to the network or stored in public state.
-- **Donor Identity / Wallet Linking**: The Zero-Knowledge proof proves the donor's eligibility and registers their intent without revealing personal identifiable information (PII) or unshielded credentials on-chain.
 - **Precise Donor Age**: Age verification (> 18) happens inside local ZK circuit constraints. The exact age is never revealed.
 - **Individual Organ Pledges**: Which specific user pledged which specific organs remains hidden from observers.
 
-**✅ What an Observer CAN Learn (Disclosed On-Chain Public State):**
+**What an Observer CAN Learn (Public Information):**
 - **Verified Total Donors**: The aggregate counter tracking the total number of registered donors.
 - **Anonymized Blood Availability Tally**: The system tallies public counts of available blood types (e.g., Type O-, Type A+) to help medical institutions.
 - **Cryptographic Commitment Hash**: The disclosed persistent hash commitment representing a mathematically proven registration event.
 
-## 🛠️ Contract & Live Deployment Details
-| Environment | Location / Address | Verification / Explorer Link |
-| --- | --- | --- |
-| **Live Web App** | https://private-organ-donor-registry.vercel.app/ | Open Live App |
-| **Demo Video** | [Add your YouTube Demo Link] | Watch Video Demo |
-| **Preprod Smart Contract** | `0x1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3` | Verify Contract on Midnight Preprod Explorer |
-| **CI/CD Workflow** | `.github/workflows/ci.yml` | View GitHub Actions Run |
+## Tech Stack
+- **Smart Contract**: Compact (Midnight Network)
+- **Frontend**: React, TypeScript, Vite
+- **Wallet**: Midnight Lace Wallet
+- **Styling**: Vanilla CSS (SaaS theme)
+- **Testing**: Vitest
 
-## 🔑 Browser Wallet Connector (`window.midnight.mnLace`)
-```typescript
-// Connect directly to user's browser Midnight Lace Wallet extension
-public async connectWallet(): Promise<{ connected: boolean; walletAddress: string; walletName: string }> {
-  const provider = this.getBrowserWalletProvider();
-  if (!provider) {
-    throw new Error("Midnight Lace Wallet extension not detected. Please install and enable the extension.");
-  }
-  const connectedApi = await provider.connect('preprod');
-  const address = await connectedApi.getUnshieldedAddress();
-  return { connected: true, walletAddress: address.unshieldedAddress, walletName: provider.name };
-}
+## Folder Structure
+```
+private-organ-donor-registry/
+├── contracts/             # Contains organ-donor-registry.compact smart contract
+├── frontend/              # React frontend application
+├── src/                   # Deployment and setup scripts
+├── assets/                # Screenshots and images
+├── test/                  # Automated tests
+└── package.json           # Root project dependencies
 ```
 
-## 🚀 Quickstart & Local Installation
+## Prerequisites
+- **Node.js**: v22
+- **Docker**: Installed and running (for the proof server)
+- **Midnight Lace Wallet**: Installed in your browser
 
+## Installation
 Clone the repository:
 ```bash
 git clone https://github.com/sourasishbhaduri/private-organ-donor-registry.git
 cd private-organ-donor-registry
 ```
 
-Set Node version and install dependencies:
+Install root dependencies:
 ```bash
 nvm use 22
 npm install
 ```
 
-Start the Midnight Proof Server container (if needed):
+Install frontend dependencies:
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+## Build
+Build the project:
+```bash
+npm run build
+```
+
+## Compile
+Start the Midnight Proof Server container:
 ```bash
 docker run -d -p 6300:6300 midnightntwrk/proof-server:8.1.0
 ```
@@ -83,25 +88,34 @@ Compile the Compact contract:
 npm run compile
 ```
 
-Start Development Server:
+## Manual Deployment
+Deployment is intentionally skipped so you can deploy the contract using your own credentials.
+Execute the following deployment command manually:
 ```bash
-npm run dev
+NODE_OPTIONS="--max-old-space-size=12288" npm run deploy -- --network preprod
 ```
 
-## 🧪 Automated Test Suite
+## After Deployment
+The only remaining manual steps are:
+1. Deploy the Compact contract.
+2. Copy the deployed contract address.
+3. Replace every occurrence of:
+`<YOUR_DEPLOYED_CONTRACT_ADDRESS>`
+with your deployed contract address in the `.env` and `README.md` files.
 
-Run the unit test suite:
-```bash
-npm test
+## Environment Variables
+Create a `.env` file in the root of the project:
+```env
+CONTRACT_ADDRESS=<YOUR_DEPLOYED_CONTRACT_ADDRESS>
 ```
 
-**Expected Output:**
-```
- ✓ test/organ-donor-registry.test.ts (11 tests) 
+## Screenshots
+![Landing Page](./assets/landing-page.png)
+![Public Ledger Tally](./assets/ledger-tally.png)
 
- Test Files  1 passed (1)
-      Tests  11 passed (11)
-```
+## Initial Idea
+[PASTE YOUR PROJECT IDEA HERE]
 
-## 📸 Platform Screenshots
-See images attached at the top of this document for the **Visitor Verification Portal** and **Public Ledger Tally**.
+## Troubleshooting
+- **Lace Wallet not connecting**: Ensure the extension is unlocked and on the Preprod network.
+- **Proof server errors**: Make sure Docker is running and port 6300 is exposed.
