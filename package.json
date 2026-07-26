@@ -8,7 +8,7 @@
   "scripts": {
     "compile": "compact compile contracts/organ-donor-registry.compact contracts/managed/organ-donor-registry",
     "dev": "cd frontend && npm run dev",
-    "build": "npx tsc --noEmit || true",
+    "build": "npx tsc --noEmit",
     "setup": "npx tsx src/setup.ts",
     "deploy": "npx tsx src/deploy.ts",
     "cli": "npx tsx src/cli.ts",
@@ -39,7 +39,7 @@
     "@types/node": "^22.0.0",
     "@types/ws": "^8.18.1",
     "tsx": "^4.23.1",
-    "typescript": "^6.0.3"
+    "typescript": "^5.6.3"
   },
   "engines": {
     "node": ">=22.0.0"

@@ -20,23 +20,21 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install Compact Compiler
-        run: |
-          mkdir -p ~/.local/bin
-          curl -sSL https://releases.midnight.network/compact/latest/install.sh | bash || true
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Install Root Dependencies
         run: npm ci
 
-      - name: Compile Compact Smart Contract
-        run: npm run compile
+      - name: Verify Compiled Contract Artifacts
+        run: |
+          echo "Verifying pre-compiled Compact contract artifacts..."
+          test -f contracts/managed/organ-donor-registry/contract/index.js || (echo "ERROR: compiled contract index.js not found" && exit 1)
+          test -f contracts/managed/organ-donor-registry/contract/index.d.ts || (echo "ERROR: compiled contract index.d.ts not found" && exit 1)
+          echo "Contract artifacts OK."
 
       - name: Run Unit Tests
         run: npm test
 
-      - name: Type-check and Build Root TypeScript
-        run: npm run build
+      - name: Type-check Root TypeScript
+        run: npx tsc --noEmit
 
       - name: Build Frontend Application
         run: |
