@@ -18,7 +18,7 @@ A privacy-preserving zero-knowledge organ donor registry built on the Midnight N
 - [x] **Passing Test Suite**: 11/11 Vitest unit tests passing (`npm test`)
 - [x] **CI/CD Pipeline Running**: GitHub Actions workflow running automated build & tests (`.github/workflows/ci.yml`)
 - [x] **Public GitHub Repository**: https://github.com/sourasishbhaduri/private-organ-donor-registry
-- [x] **Deployed Smart Contract**: `[Add Contract Address]`
+- [x] **Deployed Smart Contract**: `0x1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3`
 - [x] **On-Chain Explorer Verification**: Verify Contract on Midnight Preprod Explorer
 - [x] **Browser Wallet Integration**: Directly connects to user's Midnight Lace Wallet (`window.midnight.mnLace` / `window.midnight.lace`)
 - [x] **Lace Wallet Connect / Disconnect Lifecycle**: Full session management with event prompts and error handling
@@ -42,7 +42,7 @@ A privacy-preserving zero-knowledge organ donor registry built on the Midnight N
 | --- | --- | --- |
 | **Live Web App** | [Add your Vercel URL] | Open Live App |
 | **Demo Video** | [Add your YouTube Demo Link] | Watch Video Demo |
-| **Preprod Smart Contract** | `[Add Contract Address]` | Verify Contract on Midnight Preprod Explorer |
+| **Preprod Smart Contract** | `0x1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3` | Verify Contract on Midnight Preprod Explorer |
 | **CI/CD Workflow** | `.github/workflows/ci.yml` | View GitHub Actions Run |
 
 ## 🔑 Browser Wallet Connector (`window.midnight.mnLace`)
