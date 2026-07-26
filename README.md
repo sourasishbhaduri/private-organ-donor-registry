@@ -6,14 +6,14 @@ A privacy-preserving zero-knowledge organ donor registry built on the Midnight N
 ![Public Ledger Tally](./assets/ledger-tally.png)
 
 ## 🚀 Live Demo, Video & Repository
-- **🌐 Live Web Application**: [Add your Vercel URL]
+- **🌐 Live Web Application**: https://private-organ-donor-registry.vercel.app/
 - **📺 YouTube Demo Video**: [Add your YouTube Demo Link]
 - **📦 GitHub Repository**: https://github.com/sourasishbhaduri/private-organ-donor-registry
 - **⚙️ CI/CD Workflow**: `.github/workflows/ci.yml`
 
 ## 📋 Challenge Requirements & Passing Checklist
 - [x] **Fully Functional Privacy dApp**: Meaningful use of Midnight's Zero-Knowledge privacy model to register donors anonymously.
-- [x] **Live Demo Deployment**: [Add your Vercel URL]
+- [x] **Live Demo Deployment**: https://private-organ-donor-registry.vercel.app/
 - [x] **Demo Video (Lace Wallet + ZK Circuit Call)**: [Add your YouTube Demo Link]
 - [x] **Passing Test Suite**: 11/11 Vitest unit tests passing (`npm test`)
 - [x] **CI/CD Pipeline Running**: GitHub Actions workflow running automated build & tests (`.github/workflows/ci.yml`)
@@ -40,7 +40,7 @@ A privacy-preserving zero-knowledge organ donor registry built on the Midnight N
 ## 🛠️ Contract & Live Deployment Details
 | Environment | Location / Address | Verification / Explorer Link |
 | --- | --- | --- |
-| **Live Web App** | [Add your Vercel URL] | Open Live App |
+| **Live Web App** | https://private-organ-donor-registry.vercel.app/ | Open Live App |
 | **Demo Video** | [Add your YouTube Demo Link] | Watch Video Demo |
 | **Preprod Smart Contract** | `0x1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3` | Verify Contract on Midnight Preprod Explorer |
 | **CI/CD Workflow** | `.github/workflows/ci.yml` | View GitHub Actions Run |
