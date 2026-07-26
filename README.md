@@ -2,8 +2,13 @@
 
 A privacy-preserving zero-knowledge organ donor registry built on the Midnight Network using Compact smart contracts.
 
-![Landing Page](./assets/landing-page.png)
-![Public Ledger Tally](./assets/ledger-tally.png)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg)](https://private-organ-donor-registry.vercel.app/)
+[![Demo Video](https://img.shields.io/badge/Demo-Video-red.svg)](https://youtu.be/cKyQAnHrgIc)
+[![CI/CD Pipeline](https://github.com/sourasishbhaduri/private-organ-donor-registry/actions/workflows/ci.yml/badge.svg)](https://github.com/sourasishbhaduri/private-organ-donor-registry/actions/workflows/ci.yml)
+[![Midnight Preprod](https://img.shields.io/badge/Midnight-Preprod-blue.svg)](https://explorer.preprod.midnight.network/)
+[![Compact Language](https://img.shields.io/badge/Compact-Language-orange.svg)](https://docs.midnight.network/develop/tutorial/building/compact)
+[![Node.js Version](https://img.shields.io/badge/Node.js-22-green.svg)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 🚀 Live Demo, Video & Repository
 - **🌐 Live Web Application**: https://private-organ-donor-registry.vercel.app/
@@ -40,10 +45,10 @@ A privacy-preserving zero-knowledge organ donor registry built on the Midnight N
 ## 🛠️ Contract & Live Deployment Details
 | Environment | Location / Address | Verification / Explorer Link |
 | --- | --- | --- |
-| **Live Web App** | https://private-organ-donor-registry.vercel.app/ | Open Live App |
-| **Demo Video** | https://youtu.be/cKyQAnHrgIc | Watch Video Demo |
-| **Preprod Smart Contract** | `0x1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3` | Verify Contract on Midnight Preprod Explorer |
-| **CI/CD Workflow** | `.github/workflows/ci.yml` | View GitHub Actions Run |
+| **Live Web App** | https://private-organ-donor-registry.vercel.app/ | [Open Live App](https://private-organ-donor-registry.vercel.app/) |
+| **Demo Video** | https://youtu.be/cKyQAnHrgIc | [Watch Video Demo](https://youtu.be/cKyQAnHrgIc) |
+| **Preprod Smart Contract** | `0x1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3` | [Verify Contract on Midnight Preprod Explorer](https://explorer.preprod.midnight.network/?search=0x1e3a57110a038d73d0d8e23777ced0e087e75d3f9185add9c967d26daf28cab3) |
+| **CI/CD Workflow** | `.github/workflows/ci.yml` | [View GitHub Actions Run](https://github.com/sourasishbhaduri/private-organ-donor-registry/actions) |
 
 ## 🔑 Browser Wallet Connector (`window.midnight.mnLace`)
 ```typescript
@@ -73,7 +78,7 @@ nvm use 22
 npm install
 ```
 
-Start the Midnight Proof Server container (if needed):
+Start the Midnight Proof Server container:
 ```bash
 docker run -d -p 6300:6300 midnightntwrk/proof-server:8.1.0
 ```
@@ -104,4 +109,9 @@ npm test
 ```
 
 ## 📸 Platform Screenshots
-See images attached at the top of this document for the **Visitor Verification Portal** and **Public Ledger Tally**.
+
+**Visitor Verification Portal**
+![Landing Page](./assets/landing-page.png)
+
+**Public Ledger Tally**
+![Public Ledger Tally](./assets/ledger-tally.png)
