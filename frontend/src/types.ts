@@ -7,6 +7,9 @@ export interface WalletState {
   tNightBalance: bigint;
   dustBalance: bigint;
   syncing: boolean;
+  walletName?: string;
+  providerType?: 'lace' | 'seed' | 'other';
+  error?: string | null;
 }
 
 export interface DonorFormData {

@@ -4,18 +4,23 @@ import { DonorRegistrationForm } from './components/DonorRegistrationForm';
 import { PublicLedgerState } from './components/PublicLedgerState';
 import { PrivateVerificationModal } from './components/PrivateVerificationModal';
 import { PrivacyModelBanner } from './components/PrivacyModelBanner';
+import { WalletModal } from './components/WalletModal';
 import { WalletState, NetworkId, DonorFormData, PublicLedgerData, VerificationResult } from './types';
 import { HeartPulse, UserPlus, Database, ShieldCheck, Info } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [wallet, setWallet] = useState<WalletState>({
-    connected: true,
-    address: 'mn_addr_undeployed1q9x38n4lks8d7f2a9c3m1v8e5k4p2w0z7x6',
+    connected: false,
+    address: null,
     network: 'undeployed',
-    tNightBalance: 10000000000n,
-    dustBalance: 500000000n,
+    tNightBalance: 0n,
+    dustBalance: 0n,
     syncing: false,
+    walletName: undefined,
+    providerType: undefined,
   });
+
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'register' | 'ledger' | 'verify' | 'privacy'>('register');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,12 +42,14 @@ export const App: React.FC = () => {
     lastUpdated: new Date(),
   });
 
-  const handleConnect = () => {
+  const handleOpenConnectModal = () => {
+    setIsWalletModalOpen(true);
+  };
+
+  const handleWalletConnected = (newState: Partial<WalletState>) => {
     setWallet((prev) => ({
       ...prev,
-      connected: true,
-      address: 'mn_addr_undeployed1q9x38n4lks8d7f2a9c3m1v8e5k4p2w0z7x6',
-      tNightBalance: 10000000000n,
+      ...newState,
     }));
   };
 
@@ -53,6 +60,8 @@ export const App: React.FC = () => {
       address: null,
       tNightBalance: 0n,
       dustBalance: 0n,
+      walletName: undefined,
+      providerType: undefined,
     }));
   };
 
@@ -124,7 +133,7 @@ export const App: React.FC = () => {
       {/* Navigation Header */}
       <Navbar
         wallet={wallet}
-        onConnect={handleConnect}
+        onConnect={handleOpenConnectModal}
         onDisconnect={handleDisconnect}
         onNetworkChange={handleNetworkChange}
       />
@@ -194,6 +203,13 @@ export const App: React.FC = () => {
         )}
 
       </main>
+
+      {/* Wallet Selector Modal */}
+      <WalletModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        onWalletConnected={handleWalletConnected}
+      />
 
       {/* Footer */}
       <footer style={{ borderTop: '1px solid var(--border-glass)', padding: '24px 20px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.85rem' }}>

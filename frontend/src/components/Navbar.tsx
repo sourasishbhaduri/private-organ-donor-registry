@@ -69,8 +69,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div className="saas-card" style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} className="animate-pulse-glow" />
+                <span className="badge-pill badge-green" style={{ fontSize: '0.75rem' }}>
+                  {wallet.walletName || 'Lace Wallet'}
+                </span>
                 <span className="font-mono" style={{ fontSize: '0.85rem' }}>
-                  {wallet.address ? `${wallet.address.slice(0, 8)}...${wallet.address.slice(-6)}` : 'Connected'}
+                  {wallet.address ? `${wallet.address.slice(0, 12)}...${wallet.address.slice(-6)}` : 'Connected'}
                 </span>
                 <span className="badge-pill badge-blue" style={{ fontSize: '0.75rem' }}>
                   {wallet.tNightBalance ? `${(Number(wallet.tNightBalance) / 1e6).toFixed(2)} tNIGHT` : '0 tNIGHT'}
@@ -82,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           ) : (
             <button onClick={onConnect} className="btn-saas-primary">
-              <Wallet size={18} /> Connect Lace Wallet
+              <Wallet size={18} /> Connect Wallet
             </button>
           )}
 
