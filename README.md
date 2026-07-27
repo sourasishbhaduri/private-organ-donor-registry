@@ -14,12 +14,14 @@ A privacy-preserving zero-knowledge organ donor registry built on the Midnight N
 - **🌐 Live Web Application**: https://private-organ-donor-registry.vercel.app/
 - **📺 YouTube Demo Video**: https://youtu.be/cKyQAnHrgIc
 - **📦 GitHub Repository**: https://github.com/sourasishbhaduri/private-organ-donor-registry
+- **📄 Project Proposal**: [PROPOSAL.md](./PROPOSAL.md)
 - **⚙️ CI/CD Workflow**: `.github/workflows/ci.yml`
 
 ## 📋 Challenge Requirements & Passing Checklist
 - [x] **Fully Functional Privacy dApp**: Meaningful use of Midnight's Zero-Knowledge privacy model to register donors anonymously.
 - [x] **Live Demo Deployment**: https://private-organ-donor-registry.vercel.app/
 - [x] **Demo Video (Lace Wallet + ZK Circuit Call)**: https://youtu.be/cKyQAnHrgIc
+- [x] **Product Proposal**: Detailed 4-section architecture document in [PROPOSAL.md](./PROPOSAL.md)
 - [x] **Passing Test Suite**: 11/11 Vitest unit tests passing (`npm test`)
 - [x] **CI/CD Pipeline Running**: GitHub Actions workflow running automated build & tests (`.github/workflows/ci.yml`)
 - [x] **Public GitHub Repository**: https://github.com/sourasishbhaduri/private-organ-donor-registry
